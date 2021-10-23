@@ -1,11 +1,89 @@
-import React from 'react'
-import { StyleSheet, Text, View } from 'react-native'
+import React, { useState, useEffect} from 'react';
+import MapView, { Marker } from 'react-native-maps';
+import { StyleSheet, Text, ScrollView, View } from 'react-native';
+import { Card } from 'react-native-elements';
+import { MaterialIcons } from '@expo/vector-icons';
+
+import { db } from '../../firebase_auth';
+
+
+const StartingPointMarker = () => (
+    <View style={{
+        flexDirection: 'row'
+    }}
+    >
+        <MaterialIcons name="directions-bike" size={35} color="green" />
+        <View>
+            <Text>Starting</Text>
+            <Text>Point</Text>
+        </View>
+    </View>
+);
+
+const FinishPointMarker = () => (
+    <View style={{
+        flexDirection: 'row'
+    }}
+    >
+        <MaterialIcons name="directions-bike" size={35} color="blue" />
+        <View>
+            <Text>Finishing</Text>
+            <Text>Line</Text>
+        </View>
+    </View>
+);
+  
+  
 
 const EventsTab = () => {
+    const [events, setEvents] =useState([]);
+
+    useEffect(() => {
+        db.collection('events').get().then((dataSnapshot) => {
+            setEvents(dataSnapshot.docs);
+        })
+    }, []);
+
     return (
-        <View style={styles.container}>
-            <Text>Events</Text>
-        </View>
+        <ScrollView style={{ paddingTop: 30, backgroundColor: 'whitesmoke'}}>
+            {
+                events.map((event) => { 
+                    return (
+                        <Card>
+                            <Card.Title>{event.data().eventName}</Card.Title>
+                            <Text>{event.data().participantsNo  || "unknown"}</Text>
+                            <Card.Divider />
+                            <MapView 
+                                style={styles.map} 
+                                initialRegion={{
+                                    latitude: event.data().startingPoint.latitude,
+                                    longitude: event.data().startingPoint.longitude,
+                                    latitudeDelta: 0.009,
+                                    longitudeDelta: 0.009
+                                }}
+                            >
+                                <Marker coordinate={{
+                                        latitude: event.data().startingPoint.latitude,
+                                        longitude: event.data().startingPoint.longitude
+                                    }}
+                                >
+                                    <StartingPointMarker />
+                                </Marker>
+                                <Marker coordinate={{
+                                        latitude: event.data().finishPoint.latitude,
+                                        longitude: event.data().finishPoint.longitude
+                                    }}
+                                >
+                                    <FinishPointMarker />
+                                </Marker>
+                            </MapView>
+                            <Card.Divider />
+                            <Text>{event.data().description}</Text>
+                        </Card>
+                    )
+                })
+            }
+        </ScrollView>
     )
 }
 
@@ -16,5 +94,9 @@ const styles = StyleSheet.create({
         flex: 1,
         justifyContent: 'center',
         alignItems: 'center',
-    }
+    },
+    map: {
+        width: "100%",
+        height: 200,
+      },
 })

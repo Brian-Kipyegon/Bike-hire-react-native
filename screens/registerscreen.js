@@ -22,12 +22,9 @@ export default function RegisterScreen({ navigation }) {
             .createUserWithEmailAndPassword(email, password)
             .then((userCredentials) => {
                 const user = userCredentials.user;
-                console.log(user.email);
+                console.log(user);
                 navigation.navigate('HomeScreen', { 
                     screen: 'HomeTab',
-                    params: {
-                        user: user,
-                    }
                 });
 
             })
@@ -41,12 +38,9 @@ export default function RegisterScreen({ navigation }) {
             .signInWithEmailAndPassword(email, password)
             .then((userCredentials) => {
                 const user = userCredentials.user;
-                console.log(user.email);
+                //console.log(user);
                 navigation.navigate('HomeScreen', { 
                     screen: 'HomeTab',
-                    params: {
-                        user: user,
-                    }
                 });
             })
             .catch((error) => {

@@ -2,8 +2,6 @@ import React from 'react'
 import { Text, View, Button, ImageBackground, StyleSheet } from 'react-native'
 import { TouchableOpacity } from 'react-native-gesture-handler';
 
-import globalstyles from '../styles/styles';
-
 export default function LandingPage({ navigation }) {
     return (
         <View style={styles.container}>
@@ -63,7 +61,6 @@ const styles = StyleSheet.create({
         fontSize: 50,
         fontWeight: 'bold',
         color: 'white',
-        fontFamily: 'cocobiker'
     },
     cont: {
         padding: 20,
