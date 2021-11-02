@@ -3,7 +3,7 @@ import { StyleSheet, Text, View, Image } from 'react-native'
 import { FlatList, TouchableOpacity } from 'react-native-gesture-handler';
 import { AntDesign } from '@expo/vector-icons';
 import { Card } from 'react-native-elements';
-import { auth, storage } from '../../firebase_auth';
+import { auth, storage, db } from '../../firebase_auth';
 import * as ImagePicker from 'expo-image-picker';
 
 const ProfileTab = () => {
@@ -15,23 +15,38 @@ const ProfileTab = () => {
         }
         return null;
     });
+    const [events, setEvents] = useState([]); 
 
-    const [events, setEvents] = useState([
-        {key:'1', name: 'Sunday-Ride', date: new Date(2020, 10, 23)},
-        {key:'2', name: 'Tuesday-Ride', date: new Date(2020, 10, 23)},
-        {key:'3', name: 'Tuesday-Ride', date: new Date(2020, 10, 23)}
-    ]);
+    useEffect(() => { 
+        //console.log("running useEffect 1");
+        (async () => {
+            if (Platform.OS !== 'web') {
+                const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+                if (status !== 'granted') {
+                alert('Sorry, we need camera roll permissions to make this work!');
+                }
+            }
+        })();
+    }, []);
 
     useEffect(() => {
-        (async () => {
-          if (Platform.OS !== 'web') {
-            const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
-            if (status !== 'granted') {
-              alert('Sorry, we need camera roll permissions to make this work!');
+        //console.log("running useEffect 2");
+        db.collection('eventRegistration').where('participant', '==', `${user.uid}`).get().then(dataSnapshot => {
+            let eventIds = dataSnapshot.docs.map((doc) => {
+                return doc.data().event
+            })
+            //let eventcache = []
+            for (let i = 0; i < eventIds.length; i++) {
+                db.doc(`events/${eventIds[i]}`).get().then(dataSnapshot => {
+                    setEvents(prevState => [...prevState, dataSnapshot.data()]);
+                    //eventcache.push(dataSnapshot.data());
+                    //console.log(dataSnapshot.data());
+                })
             }
-          }
-        })();
-      }, []);
+            //setEvents(prevState => [...prevState, eventcache]); 
+        }).catch((err) => { console.log(err)})
+        //console.log('success'); 
+    }, [])
 
     const pickImage = async () => {
         let result = await ImagePicker.launchImageLibraryAsync({
@@ -41,22 +56,36 @@ const ProfileTab = () => {
             quality: 1,
         });
 
-        //console.log(result);
+        console.log(result);
 
         if (!result.cancelled) {
             setImage(result.uri);
             let metadata = {
                 contentType: result.type
             };
+            const data = new FormData();
+            data.append('photo', {
+                type: result.type,
+                image_file: Platform.OS === 'ios' ? result.uri.replace('file://', '') : result.uri,
+            });
 
-            let reference = storage.ref("star.jpg");         // 2
+            fetch("http://154.159.75.137.146:5000/imageupload", {
+                method: 'POST',
+                body: data
+            }).then((response) => response.json()).then((response) => {
+                    console.log('response', response);
+            }).catch((error) => {
+                    console.log('error', error);
+            });
+
+            let reference = storage.ref("star.jpg");
             let task = reference.put(result.uri, metadata);  
 
-            task.then(() => {                                 // 4
+            task.then(() => {                                 
                 console.log('Image uploaded to the bucket!');
             }).catch((e) => console.log('uploading image error => ', e));
 
-            task.snapshot.ref.getDownloadURL().then((downloadURL) => {
+            /* task.snapshot.ref.getDownloadURL().then((downloadURL) => {
                 if (user) {
                     user.updateProfile({
                         photoURL: downloadURL,
@@ -65,33 +94,46 @@ const ProfileTab = () => {
                         console.log("user's photoURL updated successfully")
                     }).catch((e) => console.log('uploading image error => ', e))
                 }
-            });
+            }); */
+
+            user.updateProfile({
+                photoURL: result.uri,
+            }).then(() => {
+                console.log(user.photoURL)
+                console.log("user's photoURL updated successfully")
+            }).catch((e) => console.log('uploading image error => ', e))
+
+            console.log(user.photoURL)
             setImage(user.photoURL)
         }
     };
 
-    const Item = ({ title, date }) => (
+    /* const Item = ({ item, name }) => (
         <Card>
-            <Card.Title>{title}</Card.Title>
+            <Card.Title>{name}</Card.Title>
             <Card.Divider />
-            <Text>{date}</Text>
+            <Text>{item.description}</Text>
         </Card>
-    );
+    ); */
       
 
-    const renderItem = ({ item }) => (
-        <Item title={item.name} />
-    );
+    const renderItem = ({ item }) => {
+        console.log("renderItem func")
+        console.log(item)
+        return (
+            <Card>
+            <Card.Title>{item.eventName}</Card.Title>
+            <Card.Divider />
+            <Text>{item.description}</Text>
+        </Card>
+        )
+    }
 
     return (
         <View style={styles.container}>
             <View style={styles.profilePicContainer}>
-            {image ? (
-                <Image source={{ uri: image }} style={styles.profilePic} /> 
-            ):(
+            
                 <Image source={require('../../assets/default.png')} style={styles.profilePic} />
-            )
-            }
             </View>
 
             <View style={styles.feedContainer}>
