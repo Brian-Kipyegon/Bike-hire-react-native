@@ -1,44 +1,67 @@
-import React, {useState, useEffect} from 'react'
-import { StyleSheet, Text, View, Image, Button, ScrollView } from 'react-native'
+import React, { useState, useEffect } from 'react'
+import { StyleSheet, Text, View, Image, Button } from 'react-native'
 import { Card } from 'react-native-elements';
+import { FlatList } from 'react-native-gesture-handler';
 import { auth, storage, db } from '../../firebase_auth';
 
 const HomeTab = () => {
 
     const [bikes, setBikes] = useState([])
+    const user = auth.currentUser
+
     useEffect(() => {
-        db.collection('Bikes').where('isAvailable', "==", true).get().then((snapshot) => {
-            snapshot.docs.forEach(doc => {
-                setBikes(prevState => [...prevState, doc.data()])
+        const unsubscribe = db
+            .collection('Bikes')
+            .where("isAvailable", "==", true)
+            .onSnapshot((snapshot) => {
+                setBikes([])
+                snapshot.docs.forEach(doc => {
+                    setBikes(prevState => [...prevState, {
+                        Id: doc.id,
+                        data: doc.data()
+                    }]);
+                });
             })
-        });
-        console.log("Bikes useEffect")
+
         console.log(bikes);
+        return () => unsubscribe();
     }, []);
 
-    const bikeCards = bikes.map((bike, index) => {
-        console.log(index);
+    const handleHire = (id) => {
+        db.doc(`Bikes/${id}`).update({
+            isAvailable: false
+        });
+        db.collection("Hire").add({
+            user: user.uid,
+            bike: id
+        });
+        alert('Hired');
+    }
+
+    const renderItem = ({ item }) => {
         return (
-            <Card key={index}>
-                <Image 
-                    source={require("../../assets/bike-image.jpg")} 
+            <Card>
+                <Image
+                    source={require("../../assets/bike-image.jpg")}
                     style={styles.bikeImage}
                 />
                 <Card.Divider />
-                <Text>{bike.name}</Text>
-                <Button title="Hire"/>
+                <Text>{item.data.name}</Text>
+                <Button title="Hire" onPress={() => handleHire(item.Id)} />
             </Card>
         )
-    })
+    };
 
     return (
         <View >
             <View style={styles.container}>
                 <Text>Availabe Bikes</Text>
             </View>
-            <ScrollView>
-                    {bikeCards}
-            </ScrollView>
+            <FlatList
+                data={bikes}
+                renderItem={renderItem}
+                keyExtractor={item => item.Id}
+            />
         </View>
     )
 }

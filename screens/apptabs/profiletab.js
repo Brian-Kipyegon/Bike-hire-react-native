@@ -1,4 +1,4 @@
-import React, { useState, useEffect }from 'react'
+import React, { useState, useEffect } from 'react'
 import { StyleSheet, Text, View, Image } from 'react-native'
 import { FlatList, TouchableOpacity } from 'react-native-gesture-handler';
 import { AntDesign } from '@expo/vector-icons';
@@ -15,15 +15,16 @@ const ProfileTab = () => {
         }
         return null;
     });
-    const [events, setEvents] = useState([]); 
+    const [events, setEvents] = useState([]);
+    const [bikes, setBikes] = useState([]);
 
-    useEffect(() => { 
+    useEffect(() => {
         //console.log("running useEffect 1");
         (async () => {
             if (Platform.OS !== 'web') {
                 const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
                 if (status !== 'granted') {
-                alert('Sorry, we need camera roll permissions to make this work!');
+                    alert('Sorry, we need camera roll permissions to make this work!');
                 }
             }
         })();
@@ -44,9 +45,27 @@ const ProfileTab = () => {
                 })
             }
             //setEvents(prevState => [...prevState, eventcache]); 
-        }).catch((err) => { console.log(err)})
+        }).catch((err) => { console.log(err) })
         //console.log('success'); 
     }, [])
+
+    useEffect(() => {
+        const unsubscribe = db.collection("Hire").where("user", "==", user.uid).onSnapshot((snapshot) => {
+            let bikeIds = snapshot.docs.map((doc) => doc.data().bike);
+            console.log(bikeIds);
+            setBikes([]);
+
+            for (let i = 0; i < bikeIds.length; i++) {
+                db.doc(`Bikes/${bikeIds[i]}`).get().then(dataSnapshot => {
+                    setBikes(prevState => [...prevState, dataSnapshot.data()]);
+                    console.log(dataSnapshot.data());
+                })
+            }
+            console.log(bikes);
+        })
+
+        return () => unsubscribe();
+    }, []);
 
     const pickImage = async () => {
         let result = await ImagePicker.launchImageLibraryAsync({
@@ -73,15 +92,15 @@ const ProfileTab = () => {
                 method: 'POST',
                 body: data
             }).then((response) => response.json()).then((response) => {
-                    console.log('response', response);
+                console.log('response', response);
             }).catch((error) => {
-                    console.log('error', error);
+                console.log('error', error);
             });
 
             let reference = storage.ref("star.jpg");
-            let task = reference.put(result.uri, metadata);  
+            let task = reference.put(result.uri, metadata);
 
-            task.then(() => {                                 
+            task.then(() => {
                 console.log('Image uploaded to the bucket!');
             }).catch((e) => console.log('uploading image error => ', e));
 
@@ -115,24 +134,37 @@ const ProfileTab = () => {
             <Text>{item.description}</Text>
         </Card>
     ); */
-      
+
 
     const renderItem = ({ item }) => {
-        console.log("renderItem func")
+        //console.log("renderItem func")
+        //console.log(item)
+        return (
+            <Card>
+                <Card.Title>{item.eventName}</Card.Title>
+                <Card.Divider />
+                <Text>{item.description}</Text>
+            </Card>
+        )
+    }
+
+    const renderBike = ({ item }) => {
         console.log(item)
         return (
             <Card>
-            <Card.Title>{item.eventName}</Card.Title>
-            <Card.Divider />
-            <Text>{item.description}</Text>
-        </Card>
+                <Image
+                    source={require("../../assets/bike-image.jpg")}
+                />
+                <Card.Divider />
+                <Text>{item.name}</Text>
+            </Card>
         )
-    }
+    };
 
     return (
         <View style={styles.container}>
             <View style={styles.profilePicContainer}>
-            
+
                 <Image source={require('../../assets/default.png')} style={styles.profilePic} />
             </View>
 
@@ -147,16 +179,28 @@ const ProfileTab = () => {
                         <Text>200</Text>
                     </View>
                 </View>
-                
+
                 <View style={[styles.eventFeed, styles.cardEffect]}>
                     <View style={[styles.headerContainer]}>
-                            <Text>Events Registered</Text>
+                        <Text>Events Registered</Text>
                     </View>
                     <FlatList
                         data={events}
                         renderItem={renderItem}
                     />
                 </View>
+
+                <View style={[styles.eventFeed, styles.cardEffect]}>
+                    <View style={[styles.headerContainer]}>
+                        <Text>Bikes</Text>
+                    </View>
+                    <FlatList
+                        data={bikes}
+                        renderItem={renderBike}
+                        keyExtractor={item => item.Id}
+                    />
+                </View>
+
                 <TouchableOpacity onPress={pickImage}>
                     <View styles={styles.iconContainer}>
                         <AntDesign name="edit" size={24} color="black" />
@@ -201,9 +245,9 @@ const styles = StyleSheet.create({
         padding: 10,
         flexDirection: 'row',
         alignItems: 'center',
-    }, 
+    },
     infoContainer: {
-        padding : 20,
+        padding: 20,
     },
     userNameContainer: {
         flex: 0.7,
@@ -214,8 +258,8 @@ const styles = StyleSheet.create({
         flex: 0.3,
     },
     eventFeed: {
-        width : '80%',
-        height : 400,
+        width: '80%',
+        height: 400,
         marginTop: 30,
         padding: 20,
         flex: 1,

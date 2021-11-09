@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { TextInput, Text, View, Button, StyleSheet, ImageBackground } from 'react-native';
 import { auth } from '../firebase_auth';
 
@@ -20,7 +20,7 @@ export default function LoginScreen({ navigation }) {
             .then((userCredentials) => {
                 const user = userCredentials.user;
                 console.log(user.email);
-                navigation.navigate('HomeScreen', { 
+                navigation.navigate('HomeScreen', {
                     screen: 'HomeTab',
                     params: {
                         user: user,
@@ -34,28 +34,28 @@ export default function LoginScreen({ navigation }) {
 
     return (
         <View style={styles.container}>
-            <ImageBackground 
-                style={styles.image} 
+            <ImageBackground
+                style={styles.image}
                 source={require('../assets/bike.jpg')}
                 blurRadius={0.5}
             >
                 <Text style={styles.text}>Email</Text>
-                <TextInput 
-                    style={styles.input} 
-                    value={email} 
-                    onChangeText={handleEmailChange} 
+                <TextInput
+                    style={styles.input}
+                    value={email}
+                    onChangeText={handleEmailChange}
                 />
                 <Text style={styles.text}>Password</Text>
-                <TextInput 
-                    style={styles.input} 
-                    value={password} 
-                    onChangeText={handlePasswordChange} 
+                <TextInput
+                    style={styles.input}
+                    value={password}
+                    onChangeText={handlePasswordChange}
                     secureTextEntry
                 />
 
                 <Button
-                title='Login'
-                onPress = {loginUser}
+                    title='Login'
+                    onPress={loginUser}
                 />
             </ImageBackground>
         </View>

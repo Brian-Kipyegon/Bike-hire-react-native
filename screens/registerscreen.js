@@ -1,7 +1,7 @@
-import React, { useState } from 'react'
-import { TextInput, Image, Button, StyleSheet, View, Text, ImageBackground } from 'react-native'
-import { auth } from '../firebase_auth';
+import React, { useState, useEffect } from 'react'
+import { TextInput, Image, Button, StyleSheet, View, Text, ImageBackground } from 'react-native';
 
+import { auth } from '../firebase_auth';
 import Button1 from '../components/button';
 
 export default function RegisterScreen({ navigation }) {
@@ -23,7 +23,7 @@ export default function RegisterScreen({ navigation }) {
             .then((userCredentials) => {
                 const user = userCredentials.user;
                 console.log(user);
-                navigation.navigate('HomeScreen', { 
+                navigation.navigate('HomeScreen', {
                     screen: 'HomeTab',
                 });
 
@@ -39,7 +39,7 @@ export default function RegisterScreen({ navigation }) {
             .then((userCredentials) => {
                 const user = userCredentials.user;
                 //console.log(user);
-                navigation.navigate('HomeScreen', { 
+                navigation.navigate('HomeScreen', {
                     screen: 'HomeTab',
                 });
             })
@@ -50,26 +50,26 @@ export default function RegisterScreen({ navigation }) {
 
     return (
         <View style={styles.container} behavior="padding">
-            <ImageBackground 
-                style={styles.image} 
+            <ImageBackground
+                style={styles.image}
                 source={require('../assets/bike.jpg')}
                 blurRadius={0.5}
             >
-                <Image 
-                    style={styles.loginImage} 
-                    source={require('../assets/default.png')} 
+                <Image
+                    style={styles.loginImage}
+                    source={require('../assets/default.png')}
                 />
-                <TextInput 
-                    style={styles.input} 
-                    value={email} 
-                    onChangeText={handleEmailChange} 
+                <TextInput
+                    style={styles.input}
+                    value={email}
+                    onChangeText={handleEmailChange}
                     placeholder="Enter your email"
-                    placeholderTextColor="grey" 
+                    placeholderTextColor="grey"
                 />
-                <TextInput 
-                    style={styles.input} 
-                    value={password} 
-                    onChangeText={handlePasswordChange} 
+                <TextInput
+                    style={styles.input}
+                    value={password}
+                    onChangeText={handlePasswordChange}
                     placeholder="Enter your password"
                     placeholderTextColor="grey"
                     secureTextEntry

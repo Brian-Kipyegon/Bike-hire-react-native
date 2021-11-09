@@ -1,4 +1,4 @@
-import React, { useState, useEffect} from 'react';
+import React, { useState, useEffect } from 'react';
 import MapView, { Marker } from 'react-native-maps';
 import { StyleSheet, Text, View, TouchableOpacity } from 'react-native';
 import { ScrollView } from 'react-native-gesture-handler';
@@ -33,70 +33,85 @@ const FinishPointMarker = () => (
         </View>
     </View>
 );
-  
-  
+
+
 
 const EventsTab = () => {
-    const [events, setEvents] =useState([]);
+    const [events, setEvents] = useState([]);
     const user = auth.currentUser;
 
     useEffect(() => {
         db.collection('events').get().then((dataSnapshot) => {
             setEvents(dataSnapshot.docs);
-            dataSnapshot.docs.forEach((doc) => { console.log(doc.id)})
+            //dataSnapshot.docs.forEach((doc) => { console.log(doc.id) })
         })
     }, []);
 
     registerUser = (id) => {
         if (user) {
+            db
+                .collection('eventRegistration')
+                .where('participant', '==', user.uid)
+                .get()
+                .then((snapshot) => {
+                    snapshot.docs.forEach((doc) => {
+                        if (doc.data().event === id) {
+                            throw "Already registered"
+                        }
+                    })
+                })
+                .catch((err) => {
+                    alert(err)
+                })
+
             db.collection('eventRegistration').add({
                 event: id,
                 participant: user.uid
             });
-            console.log("Success")
+            //console.log("Success")
         }
     }
 
     return (
-        <ScrollView style={{ paddingTop: 30, backgroundColor: 'whitesmoke'}} contentContainerStyle={{ flexGrow: 1 }}>
+        <ScrollView style={{ paddingTop: 30, backgroundColor: 'whitesmoke' }} contentContainerStyle={{ flexGrow: 1 }}>
             {
-                events.map((event) => { 
+                events.map((event) => {
                     return (
-                        
-                            <Card>
-                                <Card.Title>{event.data().eventName}</Card.Title>
-                                <TouchableOpacity onPress={() => {registerUser(event.id)}}>
-                                    <Text>Register</Text>
-                                </TouchableOpacity>
-                                <Text>{event.data().participantsNo  || "unknown"}</Text>
-                                <Card.Divider />
-                                <MapView 
-                                    style={styles.map} 
-                                    initialRegion={{
-                                        latitude: event.data().startingPoint.latitude,
-                                        longitude: event.data().startingPoint.longitude,
-                                        latitudeDelta: 0.009,
-                                        longitudeDelta: 0.009
-                                    }}
+
+                        <Card>
+                            <Card.Title>{event.data().eventName}</Card.Title>
+                            <TouchableOpacity onPress={() => { registerUser(event.id) }}>
+                                <Text>Register</Text>
+                            </TouchableOpacity>
+                            <Text>{event.data().participantsNo || "unknown"}</Text>
+                            <Card.Divider />
+                            <MapView
+                                style={styles.map}
+                                initialRegion={{
+                                    latitude: event.data().startingPoint.latitude,
+                                    longitude: event.data().startingPoint.longitude,
+                                    latitudeDelta: 0.009,
+                                    longitudeDelta: 0.009
+                                }}
+                            >
+                                <Marker coordinate={{
+                                    latitude: event.data().startingPoint.latitude,
+                                    longitude: event.data().startingPoint.longitude
+                                }}
                                 >
-                                    <Marker coordinate={{
-                                            latitude: event.data().startingPoint.latitude,
-                                            longitude: event.data().startingPoint.longitude
-                                        }}
-                                    >
-                                        <StartingPointMarker />
-                                    </Marker>
-                                    <Marker coordinate={{
-                                            latitude: event.data().finishPoint.latitude,
-                                            longitude: event.data().finishPoint.longitude
-                                        }}
-                                    >
-                                        <FinishPointMarker />
-                                    </Marker>
-                                </MapView>
-                                <Card.Divider />
-                                <Text>{event.data().description}</Text>
-                            </Card>
+                                    <StartingPointMarker />
+                                </Marker>
+                                <Marker coordinate={{
+                                    latitude: event.data().finishPoint.latitude,
+                                    longitude: event.data().finishPoint.longitude
+                                }}
+                                >
+                                    <FinishPointMarker />
+                                </Marker>
+                            </MapView>
+                            <Card.Divider />
+                            <Text>{event.data().description}</Text>
+                        </Card>
                     )
                 })
             }
@@ -114,5 +129,5 @@ const styles = StyleSheet.create({
     map: {
         width: "100%",
         height: 200,
-      },
+    },
 })
