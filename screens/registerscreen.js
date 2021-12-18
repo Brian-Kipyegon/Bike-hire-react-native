@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react'
 import { TextInput, Image, Button, StyleSheet, View, Text, ImageBackground } from 'react-native';
 
-import { auth } from '../firebase_auth';
+import { auth, db } from '../firebase_auth';
 import Button1 from '../components/button';
 
 export default function RegisterScreen({ navigation }) {
@@ -23,6 +23,10 @@ export default function RegisterScreen({ navigation }) {
             .then((userCredentials) => {
                 const user = userCredentials.user;
                 console.log(user);
+                db.collection('Points').add({
+                    user: user.uid,
+                    points: 0
+                })
                 navigation.navigate('HomeScreen', {
                     screen: 'HomeTab',
                 });
@@ -31,6 +35,8 @@ export default function RegisterScreen({ navigation }) {
             .catch((error) => {
                 alert(error.message);
             })
+
+
     }
 
     const loginUser = () => {

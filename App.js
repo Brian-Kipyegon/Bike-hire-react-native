@@ -11,6 +11,8 @@ import LoginScreen from './screens/loginscreen';
 import RegisterScreen from './screens/registerscreen';
 import HomeScreen from './screens/homescreen';
 
+const publishable_key = "pk_test_51JyihkH4vUwIPeMY0R01qUKQ4C62kY1jIFyLnDP5EdP05mzSU68Htprx3YUrUqn5KM4hPaFEX9U695LJR2xAubAw00BlbLk8cX";
+
 const getFont = () => {
   Font.loadAsync({
     'cocobiker': require('./fonts/cocobiker/CocoBiker Regular Trial.ttf')

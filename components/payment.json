@@ -1,0 +1,84 @@
+{
+  "create_time": "2021-11-29T07:26:13Z",
+  "id": "6XV31399U4641244G",
+  "intent": "CAPTURE",
+  "links": [
+  {
+    "href": "https://api.sandbox.paypal.com/v2/checkout/orders/6XV31399U4641244G",
+    "method": "GET",
+    "rel": "self",
+  },
+],
+"payer": {
+"address": {
+"country_code": "US",
+},
+"email_address": "reactnativeapp@gmail.com",
+"name": {
+"given_name": "React",
+"surname": "Native",
+},
+"payer_id": "PE2B2PEZLDBSE",
+},
+"purchase_units": [
+Object {
+"amount": Object {
+"currency_code": "USD",
+"value": "1.00",
+},
+"payee": Object {
+"email_address": "sb-l43ncw8684266@business.example.com",
+"merchant_id": "2HBZ9JYXGPVLA",
+},
+"payments": Object {
+"captures": Array [
+Object {
+"amount": Object {
+"currency_code": "USD",
+"value": "1.00",
+},
+"create_time": "2021-11-29T07:26:48Z",
+"final_capture": true,
+"id": "4BV901191G556232J",
+"seller_protection": Object {
+"dispute_categories": Array [
+"ITEM_NOT_RECEIVED",
+"UNAUTHORIZED_TRANSACTION",
+],
+"status": "ELIGIBLE",
+},
+"status": "COMPLETED",
+"update_time": "2021-11-29T07:26:48Z",
+},
+],
+},
+"reference_id": "default",
+"shipping": Object {
+"address": Object {
+"address_line_1": "1 Main St",
+"admin_area_1": "CA",
+"admin_area_2": "San Jose",
+"country_code": "US",
+"postal_code": "95131",
+},
+"name": Object {
+"full_name": "React Native",
+},
+},
+},
+],
+"status": "COMPLETED",
+"update_time": "2021-11-29T07:26:48Z",
+}
+
+{
+  user.photoUrl ?
+  <Image source={{ uri: user.photoUrl}} style={styles.profilePic} /> :
+   <Image source={require('../../assets/default.png')} style={styles.profilePic} />
+}
+
+{
+user.photoUrl ?
+<Image source={{ uri: user.photoUrl}} style={styles.profilePic} /> :
+<Image source={require('../../assets/default.png')} style={styles.profilePic} />
+}

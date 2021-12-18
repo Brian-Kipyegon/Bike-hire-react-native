@@ -9,17 +9,12 @@ import * as ImagePicker from 'expo-image-picker';
 const ProfileTab = () => {
 
     const user = auth.currentUser;
-    const [image, setImage] = useState(() => {
-        if (user) {
-            return user.photoURL
-        }
-        return null;
-    });
+    const [image, setImage] = useState(user.photoURL);
     const [events, setEvents] = useState([]);
     const [bikes, setBikes] = useState([]);
+    const [points, setPoints] = useState(0);
 
     useEffect(() => {
-        //console.log("running useEffect 1");
         (async () => {
             if (Platform.OS !== 'web') {
                 const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
@@ -31,41 +26,67 @@ const ProfileTab = () => {
     }, []);
 
     useEffect(() => {
-        //console.log("running useEffect 2");
         db.collection('eventRegistration').where('participant', '==', `${user.uid}`).get().then(dataSnapshot => {
             let eventIds = dataSnapshot.docs.map((doc) => {
                 return doc.data().event
             })
-            //let eventcache = []
+
+            setEvents([]);
             for (let i = 0; i < eventIds.length; i++) {
                 db.doc(`events/${eventIds[i]}`).get().then(dataSnapshot => {
-                    setEvents(prevState => [...prevState, dataSnapshot.data()]);
-                    //eventcache.push(dataSnapshot.data());
-                    //console.log(dataSnapshot.data());
+                    setEvents(prevState => [...prevState, {
+                        id: dataSnapshot.id,
+                        ...dataSnapshot.data()
+                    }]);
                 })
             }
-            //setEvents(prevState => [...prevState, eventcache]); 
         }).catch((err) => { console.log(err) })
-        //console.log('success'); 
+
+    }, []);
+
+    useEffect(() => {
+        const unsubscribe = db
+            .collection('Points')
+            .where('user', '==', user.uid)
+            .onSnapshot(docs => {
+                docs.forEach(doc => {
+                    setPoints(doc.data().points);
+                })
+            });
+
+        return () => unsubscribe();
     }, [])
 
     useEffect(() => {
-        const unsubscribe = db.collection("Hire").where("user", "==", user.uid).onSnapshot((snapshot) => {
-            let bikeIds = snapshot.docs.map((doc) => doc.data().bike);
-            console.log(bikeIds);
-            setBikes([]);
+        const unsubscribe = db.collection("Hire2").where("user", "==", user.uid).onSnapshot((snapshot) => {
+            let hireEvents = snapshot.docs.map((doc) => doc.data());
+            let tmp = hireEvents.filter((item) => {return item.isCheckedOut === false});
+            let bikeIds=tmp.map((item) => item.bike);
 
+            setBikes([]);
             for (let i = 0; i < bikeIds.length; i++) {
                 db.doc(`Bikes/${bikeIds[i]}`).get().then(dataSnapshot => {
-                    setBikes(prevState => [...prevState, dataSnapshot.data()]);
-                    console.log(dataSnapshot.data());
+                    setBikes([]);
+                    setBikes(prevState => [...prevState, {
+                        id: dataSnapshot.id,
+                        ...dataSnapshot.data()
+                    }]);
                 })
             }
-            console.log(bikes);
+            //console.log(bikes);
         })
 
         return () => unsubscribe();
     }, []);
+
+    function getRandomString(length) {
+        var randomChars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+        var result = '';
+        for ( var i = 0; i < length; i++ ) {
+            result += randomChars.charAt(Math.floor(Math.random() * randomChars.length));
+        }
+        return result;
+    }
 
     const pickImage = async () => {
         let result = await ImagePicker.launchImageLibraryAsync({
@@ -78,67 +99,28 @@ const ProfileTab = () => {
         console.log(result);
 
         if (!result.cancelled) {
-            setImage(result.uri);
-            let metadata = {
-                contentType: result.type
-            };
-            const data = new FormData();
-            data.append('photo', {
-                type: result.type,
-                image_file: Platform.OS === 'ios' ? result.uri.replace('file://', '') : result.uri,
-            });
+            let resp = await fetch(result.uri);
+            let  blob = await resp.blob();
+            let filename = getRandomString(10);
+            let reference = storage.ref().child("profilepics/" + filename);
+            await reference.put(blob);
+            
+            const setURL = await storage.ref("profilepics/"+filename).getDownloadURL()
+            console.log(setURL)
+            if (user) {
+                user.updateProfile({
+                    photoURL: setURL,
+                }).then(() => {
+                    console.log(user.photoURL)
+                    console.log("user's photoURL updated successfully")
+                }).catch((e) => console.log('uploading image error => ', e))
+            }
 
-            fetch("http://154.159.75.137.146:5000/imageupload", {
-                method: 'POST',
-                body: data
-            }).then((response) => response.json()).then((response) => {
-                console.log('response', response);
-            }).catch((error) => {
-                console.log('error', error);
-            });
-
-            let reference = storage.ref("star.jpg");
-            let task = reference.put(result.uri, metadata);
-
-            task.then(() => {
-                console.log('Image uploaded to the bucket!');
-            }).catch((e) => console.log('uploading image error => ', e));
-
-            /* task.snapshot.ref.getDownloadURL().then((downloadURL) => {
-                if (user) {
-                    user.updateProfile({
-                        photoURL: downloadURL,
-                    }).then(() => {
-                        console.log(user.photoURL)
-                        console.log("user's photoURL updated successfully")
-                    }).catch((e) => console.log('uploading image error => ', e))
-                }
-            }); */
-
-            user.updateProfile({
-                photoURL: result.uri,
-            }).then(() => {
-                console.log(user.photoURL)
-                console.log("user's photoURL updated successfully")
-            }).catch((e) => console.log('uploading image error => ', e))
-
-            console.log(user.photoURL)
             setImage(user.photoURL)
         }
     };
 
-    /* const Item = ({ item, name }) => (
-        <Card>
-            <Card.Title>{name}</Card.Title>
-            <Card.Divider />
-            <Text>{item.description}</Text>
-        </Card>
-    ); */
-
-
     const renderItem = ({ item }) => {
-        //console.log("renderItem func")
-        //console.log(item)
         return (
             <Card>
                 <Card.Title>{item.eventName}</Card.Title>
@@ -149,14 +131,16 @@ const ProfileTab = () => {
     }
 
     const renderBike = ({ item }) => {
-        console.log(item)
+        console.log(item);
         return (
             <Card>
                 <Image
-                    source={require("../../assets/bike-image.jpg")}
+                    source={{ uri: item.photoURL}}
+                    style={{width: 200, height: 100}}
                 />
                 <Card.Divider />
                 <Text>{item.name}</Text>
+                <Text>{item.id}</Text>
             </Card>
         )
     };
@@ -164,25 +148,28 @@ const ProfileTab = () => {
     return (
         <View style={styles.container}>
             <View style={styles.profilePicContainer}>
-
-                <Image source={require('../../assets/default.png')} style={styles.profilePic} />
+                {
+                    image ?
+                        <Image source={{ uri: image}} style={styles.profilePic} /> :
+                        <Image source={require('../../assets/default.png')} style={styles.profilePic} />
+                }
             </View>
 
             <View style={styles.feedContainer}>
-                <View style={[styles.userInfo, styles.cardEffect]}>
+                <View style={styles.userInfo}>
                     <View style={[styles.infoContainer, styles.userNameContainer]}>
-                        <Text>Username</Text>
+                        <Text style={styles.title}>Email</Text>
                         <Text>{user.displayName || user.email}</Text>
                     </View>
                     <View style={[styles.infoContainer, styles.pointContainer]}>
-                        <Text>Biking Points</Text>
-                        <Text>200</Text>
+                        <Text style={styles.title}>Points</Text>
+                        <Text>{points}</Text>
                     </View>
                 </View>
 
                 <View style={[styles.eventFeed, styles.cardEffect]}>
                     <View style={[styles.headerContainer]}>
-                        <Text>Events Registered</Text>
+                        <Text style={styles.title}>Events Registered</Text>
                     </View>
                     <FlatList
                         data={events}
@@ -190,14 +177,14 @@ const ProfileTab = () => {
                     />
                 </View>
 
-                <View style={[styles.eventFeed, styles.cardEffect]}>
+                <View style={[styles.eventFeed, styles.cardEffect, {height: 450}]}>
                     <View style={[styles.headerContainer]}>
-                        <Text>Bikes</Text>
+                        <Text style={styles.title}>Bikes</Text>
                     </View>
                     <FlatList
                         data={bikes}
                         renderItem={renderBike}
-                        keyExtractor={item => item.Id}
+                        horizontal={true}
                     />
                 </View>
 
@@ -216,13 +203,12 @@ export default ProfileTab;
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-
     },
     profilePicContainer: {
         backgroundColor: "#00ded6",
         alignItems: 'center',
         paddingTop: 60,
-        paddingBottom: 100,
+        paddingBottom: 70,
     },
     profilePic: {
         width: 100,
@@ -232,15 +218,13 @@ const styles = StyleSheet.create({
     feedContainer: {
         flex: 1,
         alignItems: 'center',
-    },
-    cardEffect: {
-        elevation: 20,
-        shadowColor: '#52006A',
+        backgroundColor: '#d7dbd8'
     },
     userInfo: {
         width: '80%',
         backgroundColor: '#ecf0f1',
         marginTop: -60,
+        marginBottom: 10,
         borderRadius: 5,
         padding: 10,
         flexDirection: 'row',
@@ -258,16 +242,23 @@ const styles = StyleSheet.create({
         flex: 0.3,
     },
     eventFeed: {
+        backgroundColor: 'whitesmoke',
         width: '80%',
         height: 400,
-        marginTop: 30,
-        padding: 20,
+        padding: 5,
         flex: 1,
+        marginBottom: 10,
+        borderRadius: 20
     },
     headerContainer: {
         alignItems: 'center',
     },
     iconContainer: {
         padding: 5,
+    },
+    title: {
+        fontSize: 16,
+        fontWeight: 'bold',
+        color: '#00457C',
     }
 })
